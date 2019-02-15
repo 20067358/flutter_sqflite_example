@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sqflite_example/screens/note_detail.dart';
 import 'dart:async';
-import 'package:flutter_sqflite_example/models/note.dart';
+//import 'package:flutter_sqflite_example/models/note.dart';
 import 'package:flutter_sqflite_example/utils/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:flutter_sqflite_example/models/detalle_pedido.dart';
+import 'package:flutter_sqflite_example/models/cabecera_pedido.dart';
 
 class NoteList extends StatefulWidget{
 
@@ -17,36 +19,40 @@ class NoteList extends StatefulWidget{
 class NoteListState extends State<NoteList> {
 
   DatabaseHelper databaseHelper = DatabaseHelper();
-  List<Note> noteList;
+  List<DetallePedido> detallePedidoList;
   int count = 0;
 
   @override
   Widget build(BuildContext context) {
-
-    if (noteList == null) {
-      noteList = List<Note>();
+    if (detallePedidoList == null) {
+      detallePedidoList = List<DetallePedido>();
       updateListView();
     }
 
+
+    // ************  Definición de AppBar ***********************
+
+    AppBar appBarPrincipal = AppBar(
+      title: Text('Detalle de Pesaje'),
+    );
+
+
+    // ************  Definición de boton de agregar *************
+    FloatingActionButton flAgregar = FloatingActionButton(
+      onPressed: () {
+        debugPrint('FAB clicked');
+        navigateToDetail(DetallePedido(1,1,0,0), 'Crear Nuevo detalle pedido');
+      },
+      tooltip: 'Agregar Pesaje',
+      child: Icon(Icons.add),
+    );
+
+
+
     return Scaffold(
-
-      appBar: AppBar(
-        title: Text('Notes'),
-      ),
-
+      appBar: appBarPrincipal,
       body: getNoteListView(),
-
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          debugPrint('FAB clicked');
-          navigateToDetail(Note('', '', 2), 'Add Note');
-        },
-
-        tooltip: 'Add Note',
-
-        child: Icon(Icons.add),
-
-      ),
+      floatingActionButton: flAgregar,
     );
   }
 
@@ -63,27 +69,22 @@ class NoteListState extends State<NoteList> {
           child: ListTile(
 
             leading: CircleAvatar(
-              backgroundColor: getPriorityColor(this.noteList[position].priority),
-              child: getPriorityIcon(this.noteList[position].priority),
+              backgroundColor: Colors.greenAccent,
+              child: getPriorityIcon(1),
             ),
 
-            title: Text(this.noteList[position].title, style: titleStyle,),
-
-            subtitle: Text(this.noteList[position].date),
-
+            title: Text(this.detallePedidoList[position].cantidad.toString(), style: titleStyle),
+            subtitle: Text(this.detallePedidoList[position].peso.toString()),
             trailing: GestureDetector(
               child: Icon(Icons.delete, color: Colors.grey,),
               onTap: () {
-                _delete(context, noteList[position]);
+                _delete(context, detallePedidoList[position]);
               },
             ),
-
-
             onTap: () {
-              debugPrint("ListTile Tapped");
-              navigateToDetail(this.noteList[position],'Edit Note');
+              debugPrint("Detalle tapped");
+              navigateToDetail(this.detallePedidoList[position],'Editar detalle');
             },
-
           ),
         );
       },
@@ -101,7 +102,7 @@ class NoteListState extends State<NoteList> {
         break;
 
       default:
-        return Colors.yellow;
+        return Colors.blue;
     }
   }
 
@@ -114,15 +115,13 @@ class NoteListState extends State<NoteList> {
       case 2:
         return Icon(Icons.keyboard_arrow_right);
         break;
-
       default:
         return Icon(Icons.keyboard_arrow_right);
     }
   }
 
-  void _delete(BuildContext context, Note note) async {
-
-    int result = await databaseHelper.deleteNote(note.id);
+  void _delete(BuildContext context, DetallePedido detalle) async {
+    int result = await databaseHelper.deleteNote(detalle.id);
     if (result != 0) {
       _showSnackBar(context, 'Note Deleted Successfully');
       updateListView();
@@ -135,9 +134,9 @@ class NoteListState extends State<NoteList> {
     Scaffold.of(context).showSnackBar(snackBar);
   }
 
-  void navigateToDetail(Note note, String title) async {
+  void navigateToDetail(DetallePedido detalle, String title) async {
     bool result = await Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return NoteDetail(note, title);
+      return NoteDetail(detalle, title);
     }));
 
     if (result == true) {
@@ -146,14 +145,12 @@ class NoteListState extends State<NoteList> {
   }
 
   void updateListView() {
-
     final Future<Database> dbFuture = databaseHelper.initializeDatabase();
     dbFuture.then((database) {
-
-      Future<List<Note>> noteListFuture = databaseHelper.getNoteList();
+      Future<List<DetallePedido>> noteListFuture = databaseHelper.getDetallePedidosList();
       noteListFuture.then((noteList) {
         setState(() {
-          this.noteList = noteList;
+          this.detallePedidoList= noteList;
           this.count = noteList.length;
         });
       });

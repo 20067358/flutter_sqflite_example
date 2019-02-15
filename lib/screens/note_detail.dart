@@ -3,13 +3,17 @@ import 'package:flutter_sqflite_example/models/note.dart';
 import 'dart:async';
 import 'package:flutter_sqflite_example/utils/database_helper.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_sqflite_example/models/cabecera_pedido.dart';
+import 'package:flutter_sqflite_example/models/detalle_pedido.dart';
 
 class NoteDetail extends StatefulWidget {
 
   final String appBarTitle;
-  final Note note;
+  //final Note note;
+  final DetallePedido detallePedido;
+  //final CabeceraPedido cabeceraPedido;
 
-  NoteDetail(this. note, this.appBarTitle);
+  NoteDetail(this.detallePedido,this.appBarTitle);
 
   @override
   State<StatefulWidget> createState() {
@@ -20,15 +24,17 @@ class NoteDetail extends StatefulWidget {
 
 class NoteDetailState extends State<NoteDetail> {
 
-  static var _priorities = ['High', 'Low'];
+  static var _priorities = ['Blanca', 'Amarilla','Roja','Azul'];
 
   DatabaseHelper helper = DatabaseHelper();
 
   String appBarTitle;
   Note note;
 
-  TextEditingController titleController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
+  TextEditingController cantidadController =  TextEditingController();
+  TextEditingController pesoController = TextEditingController();
+
+
 
   NoteDetailState(this.note, this.appBarTitle);
 
@@ -37,145 +43,176 @@ class NoteDetailState extends State<NoteDetail> {
 
     TextStyle textStyle = Theme.of(context).textTheme.title;
 
-    titleController.text = note.title;
-    descriptionController.text = note.description;
+    cantidadController.text = note.title;
+    pesoController.text = note.description;
+
+    //**********************  Appbar **************************************
+    AppBar appbarDetalle =  AppBar(
+      title: Text(appBarTitle),
+      leading: IconButton(icon: Icon(
+          Icons.arrow_back),
+          onPressed: () {
+            moveToLastScreen();
+          }
+      ),
+    );
+    //*********************************************************************
+
+    // *************     DROPDOWN DE CAJILLAS   ***************************
+    Padding pdddb = Padding(
+        padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+        child: new Text("Escoge el tipo de cajilla: ",textScaleFactor: 1.25)
+    );
+
+    DropdownButton ddbCajillas = DropdownButton(
+        items: _priorities.map((String dropDownStringItem) {
+          return DropdownMenuItem<String> (
+            value: dropDownStringItem,
+            child: Text(dropDownStringItem),
+          );
+        }).toList(),
+        style: textStyle,
+        value: getPriorityAsString(note.priority),
+        onChanged: (valueSelectedByUser) {
+          setState(() {
+            debugPrint('User selected $valueSelectedByUser');
+            updatePriorityAsInt(valueSelectedByUser);
+          });
+        }
+    );
+
+    ListTile ltdropdown = ListTile(
+      title: pdddb,
+      subtitle: ddbCajillas,
+    );
+    //*********************************************************************
+
+    // ****************  TEXT DE CANTIDAD DE POLLOS  ***********************
+
+    Padding cantidadPollos =  Padding(
+      padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+      child: TextField(
+        keyboardType: TextInputType.number,
+        controller: cantidadController,
+        style: textStyle,
+        onChanged: (value) {
+          debugPrint('Algo cambio en cantidad de pollos');
+          updateDescription();
+        },
+        decoration: InputDecoration(
+            labelText: 'Cantidad:',
+            labelStyle: textStyle,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5.0)
+            )
+        ),
+      ),
+    );
+
+    //********************************************************************
+
+    // ******************* TEXT PESO **************************************
+    Padding pesoPollos =  Padding(
+      padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+      child: TextField(
+        keyboardType: TextInputType.number,
+        controller: pesoController,
+        style: textStyle,
+        onChanged: (value) {
+          debugPrint('Algo cambio en cantidad de pollos');
+          updateDescription();
+        },
+        decoration: InputDecoration(
+            labelText: 'Peso:',
+            labelStyle: textStyle,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5.0)
+            )
+        ),
+      ),
+    );
+
+    //*********************************************************************
+
+    // ******************   Boton de Guardar ******************************
+
+      RaisedButton btnGuardar = RaisedButton(
+        color: Theme.of(context).primaryColorDark,
+        textColor: Theme.of(context).primaryColorLight,
+        child: Text(
+          'Guardar',
+          textScaleFactor: 1.5,
+        ),
+        onPressed: () {
+          setState(() {
+            debugPrint("Boton Guardar presionado");
+            _save();
+          });
+        },
+      );
+
+    //********************************************************************
+
+    // ******************* Boton Eliminar ********************************
+    RaisedButton btnEliminar = RaisedButton(
+      color: Theme.of(context).primaryColorDark,
+      textColor: Theme.of(context).primaryColorLight,
+      child: Text(
+        'Borrar',
+        textScaleFactor: 1.5,
+      ),
+      onPressed: () {
+        setState(() {
+          debugPrint("Delete button clicked");
+          _delete();
+        });
+      },
+    );
+
+    //********************************************************************
+
+    // *************  Botones Guardar y eliminar alineados ***************
+
+    Padding btnMenu = Padding(
+      padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: btnGuardar,
+          ),
+          Container(width: 5.0),
+          Expanded(
+            child: btnEliminar,
+          ),
+        ],
+      ),
+    );
+
+    //********************************************************************
+
+    // ************************ Body *************************************
+
+   Padding pdBody = Padding(
+      padding: EdgeInsets.only(top: 15.0, left: 10.0, right: 10.0),
+      child: ListView(
+        children: <Widget>[
+          ltdropdown,
+          cantidadPollos,
+          pesoPollos,
+          btnMenu
+        ],
+      ),
+    );
+
+    //*********************************************************************
 
     return WillPopScope(
-
         onWillPop: () {
-          // Write some code to control things, when user press Back navigation button in device navigationBar
           moveToLastScreen();
         },
-
         child: Scaffold(
-          appBar: AppBar(
-            title: Text(appBarTitle),
-            leading: IconButton(icon: Icon(
-                Icons.arrow_back),
-                onPressed: () {
-                  // Write some code to control things, when user press back button in AppBar
-                  moveToLastScreen();
-                }
-            ),
-          ),
-
-          body: Padding(
-            padding: EdgeInsets.only(top: 15.0, left: 10.0, right: 10.0),
-            child: ListView(
-              children: <Widget>[
-
-                // First element
-                ListTile(
-                  title: DropdownButton(
-                      items: _priorities.map((String dropDownStringItem) {
-                        return DropdownMenuItem<String> (
-                          value: dropDownStringItem,
-                          child: Text(dropDownStringItem),
-                        );
-                      }).toList(),
-
-                      style: textStyle,
-
-                      value: getPriorityAsString(note.priority),
-
-                      onChanged: (valueSelectedByUser) {
-                        setState(() {
-                          debugPrint('User selected $valueSelectedByUser');
-                          updatePriorityAsInt(valueSelectedByUser);
-                        });
-                      }
-                  ),
-                ),
-
-                // Second Element
-                Padding(
-                  padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-                  child: TextField(
-                    controller: titleController,
-                    style: textStyle,
-                    onChanged: (value) {
-                      debugPrint('Something changed in Title Text Field');
-                      updateTitle();
-                    },
-                    decoration: InputDecoration(
-                        labelText: 'Title',
-                        labelStyle: textStyle,
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5.0)
-                        )
-                    ),
-                  ),
-                ),
-
-                // Third Element
-                Padding(
-                  padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-                  child: TextField(
-                    controller: descriptionController,
-                    style: textStyle,
-                    onChanged: (value) {
-                      debugPrint('Something changed in Description Text Field');
-                      updateDescription();
-                    },
-                    decoration: InputDecoration(
-                        labelText: 'Description',
-                        labelStyle: textStyle,
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5.0)
-                        )
-                    ),
-                  ),
-                ),
-
-                // Fourth Element
-                Padding(
-                  padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: RaisedButton(
-                          color: Theme.of(context).primaryColorDark,
-                          textColor: Theme.of(context).primaryColorLight,
-                          child: Text(
-                            'Save',
-                            textScaleFactor: 1.5,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              debugPrint("Save button clicked");
-                              _save();
-                            });
-                          },
-                        ),
-                      ),
-
-                      Container(width: 5.0,),
-
-                      Expanded(
-                        child: RaisedButton(
-                          color: Theme.of(context).primaryColorDark,
-                          textColor: Theme.of(context).primaryColorLight,
-                          child: Text(
-                            'Delete',
-                            textScaleFactor: 1.5,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              debugPrint("Delete button clicked");
-                              _delete();
-                            });
-                          },
-                        ),
-                      ),
-
-                    ],
-                  ),
-                ),
-
-              ],
-            ),
-          ),
-
+          appBar: appbarDetalle,
+          body: pdBody
         ));
   }
 
@@ -183,14 +220,22 @@ class NoteDetailState extends State<NoteDetail> {
     Navigator.pop(context, true);
   }
 
-  // Convert the String priority in the form of integer before saving it to Database
+  //Convierte el texto en entero antes de guardar a la base de datos
   void updatePriorityAsInt(String value) {
+
+    //'Blanca', 'Amarilla','Roja','Azul'
     switch (value) {
-      case 'High':
+      case 'Blanca':
         note.priority = 1;
         break;
-      case 'Low':
+      case 'Amarilla':
         note.priority = 2;
+        break;
+      case 'Roja':
+        note.priority = 3;
+        break;
+      case 'Azul':
+        note.priority = 4;
         break;
     }
   }
@@ -200,10 +245,16 @@ class NoteDetailState extends State<NoteDetail> {
     String priority;
     switch (value) {
       case 1:
-        priority = _priorities[0];  // 'High'
+        priority = _priorities[0];  // 'Blanca'
         break;
       case 2:
-        priority = _priorities[1];  // 'Low'
+        priority = _priorities[1];  // 'Amarilla'
+        break;
+      case 3:
+        priority = _priorities[0];  // 'Roja'
+        break;
+      case 4:
+        priority = _priorities[1];  // 'Azul'
         break;
     }
     return priority;
@@ -211,18 +262,20 @@ class NoteDetailState extends State<NoteDetail> {
 
   // Update the title of Note object
   void updateTitle(){
-    note.title = titleController.text;
+    note.title = cantidadController.text;
   }
 
   // Update the description of Note object
   void updateDescription() {
-    note.description = descriptionController.text;
+    note.description = pesoController.text;
   }
 
   // Save data to database
   void _save() async {
 
     moveToLastScreen();
+
+    //Ingreso el detalle del pedido, actualmente asumire que el pedido es 1
 
     note.date = DateFormat.yMMMd().format(DateTime.now());
     int result;
